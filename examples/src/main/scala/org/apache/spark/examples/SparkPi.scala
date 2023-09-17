@@ -16,28 +16,37 @@
  */
 
 // scalastyle:off println
-package org.apache.spark.examples
+package org.apache.spark.jar
 
-import scala.math.random
+import org.apache.spark.SparkConf;
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.api.java.JavaSparkContext;
 
-/** Computes an approximation to pi */
-object SparkPi {
-  def main(args: Array[String]): Unit = {
-    val spark = SparkSession
-      .builder
-      .appName("Spark Pi")
-      .getOrCreate()
-    val slices = if (args.length > 0) args(0).toInt else 2
-    val n = math.min(100000L * slices, Int.MaxValue).toInt // avoid overflow
-    val count = spark.sparkContext.parallelize(1 until n, slices).map { i =>
-      val x = random * 2 - 1
-      val y = random * 2 - 1
-      if (x*x + y*y <= 1) 1 else 0
-    }.reduce(_ + _)
-    println(s"Pi is roughly ${4.0 * count / (n - 1)}")
-    spark.stop()
-  }
+import java.util.ArrayList;
+import java.util.List;
+
+public final class SparkPi {
+
+    public static void main(String[] args) throws Exception {
+        final SparkConf sparkConf = new SparkConf().setAppName("SparkPi");
+        final JavaSparkContext jsc = new JavaSparkContext(sparkConf);
+
+        final int slices = (args.length == 1) ? Integer.parseInt(args[0]) : 2;
+        final int n = 100000 * slices;
+        final List<Integer> l = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            l.add(i);
+        }
+
+        final JavaRDD<Integer> dataSet = jsc.parallelize(l, slices);
+
+        final int count = dataSet.map(integer -> {
+            double x = Math.random() * 2 - 1;
+            double y = Math.random() * 2 - 1;
+            return (x * x + y * y < 1) ? 1 : 0;
+        }).reduce((a, b) -> a + b);
+
+        System.out.println("Pi is roughly " + 4.0 * count / n);
+    }
 }
-// scalastyle:on println
+
